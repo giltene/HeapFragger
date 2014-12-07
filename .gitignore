@@ -1,0 +1,16 @@
+target
+.idea
+out
+gh-pages
+.classpath
+.project
+.settings
+release.properties
+pom.xml.releaseBackup
+release-pom.xml
+src/main/java/org/HeapFragger/Version.java
+/bin
+*.iml
+HeapFragger.jar
+.DS_Store
+build
