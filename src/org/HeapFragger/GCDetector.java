@@ -82,6 +82,8 @@ class GCDetector {
                 if ((retentionList != null) && (count % churningAllocsBetweenRetention) == 0)
                     retentionList.add(tempObj);
 
+                tempObj = null;
+
                 // Yield as needed to throttle allocation rate:
                 yielder.yieldIfNeeded(numBytesPerChurningByteArray);
                 count++;
@@ -90,8 +92,9 @@ class GCDetector {
             Thread.sleep(100);
 
         } catch (InterruptedException e) {
-            if (verbose)
+            if (verbose) {
                 log.println("waitForGC interrupted.");
+            }
         }
     }
 
@@ -127,36 +130,39 @@ class GCDetector {
 
         do {
             // Discard one aging object at a time (one per detected GC cycle). Wait for a discarded object to
-            // not be detected after a GC cycle, indicating that it had been promoted.
-            tempObj = agingObjects.poll();
-            tempObj = null;
+            // NOT be detected after a GC cycle, indicating that it had been promoted.
+            agingObjects.poll();
 
             waitForGC(retentionList, churningAllocsBetweenRetentionsWhileWaitingForPromotion);
             count++;
 
-            tempObj = null;
-
-            if (verbose) log.println("\n\tPromotionDetector: Detected GC cycle " + count);
+            if (verbose) {
+                log.println("\n\tPromotionDetector: Detected GC cycle " + count);
+            }
 
             // See if any discarded objects were collected:
             detectedDeadRef = (ValuedWeakRef) referenceQueue.poll();
             if (detectedDeadRef == null) {
                 // Nothing was queued, even though we know we discarded an object before a GC was detected.
                 // Since the discarded object was not collected when other were, it must have been promoted.
-                log.println("\n\tPromotionDetector: we found nothing in the queue after " + count + " cycles.");
-
+                if (verbose) {
+                    log.println("\n\tPromotionDetector: Detected promotion (found nothing in the aging " +
+                            "queue after " + count + " detected GC cycles).");
+                }
                 break;
             } else {
                 // Stuff was enqueued, indicating discarded objects were collected:
                 do {
-                    if (verbose)
+                    if (verbose) {
                         log.println("\n\tPromotionDetector: agingObjectRefQueue poll = " + detectedDeadRef.value);
+                    }
                 } while ((detectedDeadRef = (ValuedWeakRef) referenceQueue.poll()) != null);
             }
         } while (count < 1000);
 
-        if (verbose)
+        if (verbose) {
             log.println("\n\tPromotionDetector: GC promotion detected after " + count + " cycles.");
+        }
 
         return count;
     }

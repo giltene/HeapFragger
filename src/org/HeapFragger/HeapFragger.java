@@ -76,9 +76,9 @@ public class HeapFragger extends Thread {
     PrintStream log;
 
     class HeapFraggerConfiguration {
-        public long allocMBsPerSec = 20;
+        public long allocMBsPerSec = 100;
 
-        public int peakMBPerIncrement = 200;
+        public int peakMBPerIncrement = 100;
         public int numStoreIncrements = 0; // Calculated based on estimatedHeapMB and peakMBPerIncrement
 
         public long pruneRatio = 53;
@@ -282,9 +282,10 @@ public class HeapFragger extends Thread {
             long targetObjCount = ((long) (config.peakMBPerIncrement * MB)) / fragObjectSize;
             int longArrayLength = (fragObjectSize - (config.estimatedArrayOverheadInBytes * 2))/8;
 
-            if (config.verbose)
+            if (config.verbose) {
                 log.println("\nHeapFragger: Pass Increment #" + passIncrementNumber + ": Making " +
                         targetObjCount + " Objects of size " + fragObjectSize);
+            }
 
             for (int i = 0; i < targetObjCount; i++) {
                 RefObject o = new RefObject(longArrayLength);
@@ -312,18 +313,24 @@ public class HeapFragger extends Thread {
             // Now that they are all old, prune the objects created in this pass by pruneRatio, keeping only
             // a fraction equal to 1/pruneRatio alive:
 
-            if (config.verbose) log.println("\nHeapFragger: Pruning frag pass by prune ratio " + config.pruneRatio);
+            if (config.verbose) {
+                log.println("\nHeapFragger: Pruning frag pass by prune ratio " + config.pruneRatio);
+            }
             store.prune(pruneYielder);
 
             // Shuffle target links in surviving pruned lists across all pass Stores, to keep things interesting:
 
-            if (config.verbose) log.println("\nHeapFragger: Connecting surviving links.");
+            if (config.verbose) {
+                log.println("\nHeapFragger: Connecting surviving links.");
+            }
             shuffleAllLinks(shuffleYielder);
         }
 
         public void frag() throws InterruptedException {
-            if (config.verbose) log.println("HeapFragger: Estimated Heap " + config.estimatedHeapMB +
-                    " MB, Starting fragger pass with " + config.numStoreIncrements + " increments.");
+            if (config.verbose) {
+                log.println("HeapFragger: Estimated Heap " + config.estimatedHeapMB +
+                        " MB, Starting fragger pass with " + config.numStoreIncrements + " increments.");
+            }
 
             int fragObjectSize = config.initialFragObjectSize;
 
@@ -352,13 +359,17 @@ public class HeapFragger extends Thread {
         try {
             int passNumber = 0;
             while (true) {
-                if (config.verbose) log.println("\nStarting a HeapFragger pass " + (passNumber++) + " ...");
+                if (config.verbose) {
+                    log.println("\nStarting a HeapFragger pass " + (passNumber++) + " ...");
+                }
                 f.frag();
             }
         } catch (InterruptedException e) {
             log.println("HeapFragger: Interrupted, exiting...");
         }
-        if (config.verbose) log.println("\nHeapFragger Done...");
+        if (config.verbose) {
+            log.println("\nHeapFragger Done...");
+        }
     }
 
     public static HeapFragger commonMain(String[] args) {
@@ -395,7 +406,9 @@ public class HeapFragger extends Thread {
             try {
                 heapFragger.join();
             } catch (InterruptedException e) {
-                if (heapFragger.config.verbose) heapFragger.log.println("HiccupMeter main() interrupted");
+                if (heapFragger.config.verbose) {
+                    heapFragger.log.println("HiccupMeter main() interrupted");
+                }
             }
         }
     }
