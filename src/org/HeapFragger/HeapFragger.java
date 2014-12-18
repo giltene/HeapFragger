@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicLong;
 //
 // HeapFragger works on the simple basis of repeatedly generating large sets
 // of objects of a given size, pruning each set down to a much smaller
-// remaining live set, and increasing the object size between passes such
-// that is becomes unlikely to fit in the areas freed up by objects
-// released in a previous pass without some amount of compaction. HeapFragger
-// ages object sets before pruning them down in order to bypass potential
-// artificial early compaction by young generation collectors.
+// remaining live set after it has been promoted, and increasing the object
+// size between passes such that is becomes unlikely to fit in the areas freed
+// up by objects released in a previous pass without some amount of compaction.
+// HeapFragger ages object sets before pruning them down in order to bypass
+// potential artificial early compaction by young generation collectors.
 //
 // By the time enough passes are done such that aggregate space allocated
 // by the passes roughly matches the heap size (although a much smaller
@@ -44,29 +44,48 @@ import java.util.concurrent.atomic.AtomicLong;
 // HeapFragger's resource consumption is completely tunable, it will throttle
 // itself to a tunable rate of allocation, and limit it's heap footprint
 // to configurable level. When run with default settings, HeapFragger will
-// occupy ~10% of the total heap space, and allocate objects at a rate
-// of 20MB/sec.
+// occupy 10% of total heap space, and allocate objects at a rate
+// of 50MB/sec.
 //
-// Altering the heap occupancy ratio (which by default changes the number
-// of passes in a compaction-inducing iteration), and the target
-// allocation rate will change the frequency with which compactions
-// occur.The main (common) settable items are:
+// Altering the allocation rate and the peakMBPerIncrement parameter
+// (a larger peakMBPerIncrement will require fewer churning passes in each
+// compaction-inducing iteration), will change the frequency with which
+// compactions occur.The main (common) settable items are:
 //
-// allocMBsPerSec [-a, default: 20]: Allocation rate - controls the CPU %
+// allocMBsPerSec [-a, default: 50]: Allocation rate - controls the CPU %
 // HeapFragger occupies, and affects compaction event freq.
 //
-// maxPassHeapFraction [-f, default: 0.1]: Drives the % of heap that
-// would be used by HeapFragger for it's peak live set.
-//
-// genChurnHeapFraction [-g, default: 0.1]: Controls the % of heap to be
-// churned through (just churned, near-zero being alive) between passes.
-// This should be set high enough to ensure the objects allocated in each
-// pass become "old" and get promoted before being pruned.
+// heapBudgetAsFraction [-f, default: 0.1] or
+// heapBudgetInMB [-b, default: derived from heapBudgetAsFraction] can
+// be used to controls the peak amount of heap space that the HeapFragger
+// will use for it's temporary churning storage needs. While the default
+// setting is to use ~10% of the detected heap size, higher heap budgets
+// can be used to allow HeapFragger to fragment the heap more quickly.
 //
 // heapMBtoSitOn [-s, default: 0]: Useful for experimenting with the
 // effects of varying heap occupancies on compaction times. Causes
 // HeapFragger to pre-allocate an additional static live set of the given
 // size.
+//
+// pauseThresholdMs [-t, default: 350]: For convenience, HeapFragger includes
+// a simple pause detector that will report on detected pauses to stderr. The
+// pauseThresholdMs parameter controls the threshold below which detected
+// pauses will not be reported.
+//
+// HeapFragger will typically be added to existing Java applications as a
+// javaagent. E.g. a typical command line will be:
+//
+// java ... -javaagent:HeapFragger.jar="-a 100" MyApp myAppArgs
+//
+// The HeapFragger jar also includes a convenient Idle class that can be
+// used for demo purposes. E.g. the following command line will demonstrate
+// periodic promotion-failure related pauses with the HotSpot CMS collector,
+// with each resulting Full GC having to deal with at least 512MB of live
+// matter in the heap:
+//
+// java -Xmx2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:+PrintGCApplicationStoppedTime
+//  -XX:+PrintGCDetails -Xloggc:gc.log -javaagent:HeapFragger.jar="-a 400 -s 512"
+//    org.HeapFragger.Idle -t 1000000000
 
 
 public class HeapFragger extends Thread {
@@ -76,12 +95,14 @@ public class HeapFragger extends Thread {
     PrintStream log;
 
     class HeapFraggerConfiguration {
-        public long allocMBsPerSec = 100;
+        public long allocMBsPerSec = 50;
 
+        public double heapBudgetAsFraction = 0.1;
+        public int heapBudgetInMB = -1;
         public int peakMBPerIncrement = 100;
         public int numStoreIncrements = 0; // Calculated based on estimatedHeapMB and peakMBPerIncrement
 
-        public long pruneRatio = 53;
+        public int pruneRatio = 53;
         public long pruneOpsPerSec = 2 * 1000 * 1000;
         public long shuffleOpsPerSec = 20 * 1000 * 1000;
         public long yielderMillis = 5;
@@ -117,8 +138,10 @@ public class HeapFragger extends Thread {
                     allocMBsPerSec = Long.parseLong(args[++i]);
                 } else if(args[i].equals("-s")) {
                     heapMBtoSitOn = Integer.parseInt(args[++i]);
-                } else if (args[i].equals("-p")) {
-                    peakMBPerIncrement = Integer.parseInt(args[++i]);
+                } else if (args[i].equals("-b")) {
+                    heapBudgetInMB = Integer.parseInt(args[++i]);
+                } else if (args[i].equals("-f")) {
+                    heapBudgetAsFraction = Double.parseDouble(args[++i]);
                 } else if (args[i].equals("-t")) {
                     pauseThresholdMs = Long.parseLong(args[++i]);
                 } else if (args[i].equals("-i")) {
@@ -126,7 +149,7 @@ public class HeapFragger extends Thread {
                 } else if (args[i].equals("-m")) {
                     fragObjectSizeMultiplier = Double.parseDouble(args[++i]);
                 } else if (args[i].equals("-r")) {
-                    pruneRatio = Long.parseLong(args[++i]);
+                    pruneRatio = Integer.parseInt(args[++i]);
                 } else if (args[i].equals("-y")) {
                     yielderMillis = Long.parseLong(args[++i]);
                 } else if (args[i].equals("-e")) {
@@ -137,11 +160,16 @@ public class HeapFragger extends Thread {
                     logFileName = args[++i];
                 } else {
                     System.out.println("Usage: java HeapFragger [-v] " +
-                            "[-a allocMBsPerSec] [-p peakMBPerIncrement] [-t pauseThresholdMs ] " +
-                            "[-e estimatedHeapMB] [-s heapMBtoSitOn]");
+                            "[-a allocMBsPerSec] [-b heapBudgetInMB] [-f heapBudgetAsFraction] " +
+                            "[-t pauseThresholdMs ] [-e estimatedHeapMB] [-s heapMBtoSitOn]");
                     System.exit(1);
                 }
             }
+
+            if (heapBudgetInMB == -1) {
+                heapBudgetInMB = (int)(estimatedHeapMB * heapBudgetAsFraction);
+            }
+            peakMBPerIncrement = heapBudgetInMB / 2;
             numStoreIncrements = (int) (estimatedHeapMB * 1.3 / peakMBPerIncrement) + 1; // ~1.3x the pass count that would be needed
         }
 
