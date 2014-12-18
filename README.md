@@ -35,22 +35,22 @@ Altering the allocation rate and the peakMBPerIncrement parameter
 compaction-inducing iteration), will change the frequency with which
 compactions occur.The main (common) settable items are:
 
-allocMBsPerSec [-a, default: 50]: Allocation rate - controls the CPU %
+- allocMBsPerSec [-a, default: 50]: Allocation rate - controls the CPU %
 HeapFragger occupies, and affects compaction event freq.
 
-heapBudgetAsFraction [-f, default: 0.1] or
+- heapBudgetAsFraction [-f, default: 0.1] or
 heapBudgetInMB [-b, default: derived from heapBudgetAsFraction] can
 be used to controls the peak amount of heap space that the HeapFragger
 will use for it's temporary churning storage needs. While the default
 setting is to use ~10% of the detected heap size, higher heap budgets
 can be used to allow HeapFragger to fragment the heap more quickly.
 
-heapMBtoSitOn [-s, default: 0]: Useful for experimenting with the
+- heapMBtoSitOn [-s, default: 0]: Useful for experimenting with the
 effects of varying heap occupancies on compaction times. Causes
 HeapFragger to pre-allocate an additional static live set of the given
 size.
 
-pauseThresholdMs [-t, default: 350]: For convenience, HeapFragger includes
+- pauseThresholdMs [-t, default: 350]: For convenience, HeapFragger includes
 a simple pause detector that will report on detected pauses to stderr. The
 pauseThresholdMs parameter controls the threshold below which detected
 pauses will not be reported.
