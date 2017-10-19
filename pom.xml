@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.heapfragger</groupId>
+    <artifactId>HeapFragger</artifactId>
+    <version>1.0.2-SNAPSHOT</version>
+
+    <name>HeapFragger</name>
+
+    <url>https://github.com/giltene/HeapFragger</url>
+
+    <description>
+        HeapFragger: A heap fragmentation inducer, meant to induce compaction of
+        the heap on a regular basis using a limited (and settable) amount of
+        CPU and memory resources.
+    </description>
+
+    <licenses>
+        <license>
+            <comments>
+                * This code was Written by Gil Tene of Azul Systems, and released to the
+                * public domain, as explained at http://creativecommons.org/publicdomain/zero/1.0/
+            </comments>
+            <name>Public Domain, per Creative Commons CC0</name>
+            <url>http://creativecommons.org/publicdomain/zero/1.0/</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>giltene</id>
+            <name>Gil Tene</name>
+            <url>https://github.com/giltene</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>scm:git:git://github.com/giltene/HeapFragger.git</url>
+        <connection>scm:git:git://github.com/giltene/HeapFragger.git</connection>
+        <developerConnection>scm:git:git@github.com:giltene/HeapFragger.git</developerConnection>
+      <tag>HeapFragger-1.0.1</tag>
+  </scm>
+
+    <issueManagement>
+        <url>https://github.com/giltene/HeapFragger/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
+
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <enableAssertions>false</enableAssertions>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-installed</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <destFileName>HeapFragger.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.basedir}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <finalName>HeapFragger</finalName>
+                    <archive>
+                        <manifest>
+                            <addClasspath>false</addClasspath>
+                            <mainClass>org.HeapFragger.HeapFragger</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Premain-Class>org.HeapFragger.HeapFragger</Premain-Class>
+                            <Agent-Class>org.HeapFragger.HeapFragger</Agent-Class>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/dist.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
+  </project>
+

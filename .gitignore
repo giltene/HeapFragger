@@ -11,6 +11,8 @@ release-pom.xml
 src/main/java/org/HeapFragger/Version.java
 /bin
 *.iml
+*.log
+*.hlog
 HeapFragger.jar
 .DS_Store
 build
