@@ -99,7 +99,7 @@ public class HeapFragger extends Thread {
 
         public double heapBudgetAsFraction = 0.1;
         public int heapBudgetInMB = -1;
-        public int peakMBPerIncrement = 100;
+        public int peakMBPerIncrement;
         public int numStoreIncrements = 0; // Calculated based on estimatedHeapMB and peakMBPerIncrement
 
         public int pruneRatio = 53;
@@ -119,7 +119,7 @@ public class HeapFragger extends Thread {
         public long estimatedHeapMB = 0;
         public int fragStoreBucketCount = 101;
         public boolean verbose = false;
-        public int heapMBtoSitOn = 0;
+        public int heapMBtoSitOn = 100;
 
         public String logFileName = null;
 
@@ -273,6 +273,10 @@ public class HeapFragger extends Thread {
         GCDetector gcDetector = new GCDetector(allocationYielder, log, config.verbose);
 
         FragMaker() {
+            initPassStores();
+        }
+
+        void initPassStores() {
             for (int i = 0; i < config.numStoreIncrements; i++) {
                 stores[i] = new PassStore();
             }
@@ -361,6 +365,9 @@ public class HeapFragger extends Thread {
             }
 
             int fragObjectSize = config.initialFragObjectSize;
+
+            initPassStores();
+            sitOnHeap.clearTargetRefAs();
 
             for (int storeIncrementNumber = 0; storeIncrementNumber < config.numStoreIncrements; storeIncrementNumber++) {
                 // Generate a fragmented set of objects of the current size in OldGen

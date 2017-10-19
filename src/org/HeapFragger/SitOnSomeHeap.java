@@ -14,14 +14,14 @@ import java.util.concurrent.atomic.AtomicLong;
 * To change this template use File | Settings | File Templates.
 */
 class SitOnSomeHeap {
-    List[] buckets;
+    List<RefObject>[] buckets;
     ListIterator[] bucketIterators;
     AtomicLong targetBucketCount = new AtomicLong(0);
 
     SitOnSomeHeap() {
         buckets = new List[1];
         bucketIterators = new ListIterator[1];
-        buckets[0] = new LinkedList<Object []>();;
+        buckets[0] = new LinkedList<RefObject>();;
         addObject(buckets[0], null);
         bucketIterators[0] = buckets[0].listIterator();
     }
@@ -41,6 +41,14 @@ class SitOnSomeHeap {
         } else {
             bucketIterators[bucketIndex] = buckets[bucketIndex].listIterator();
             return (RefObject)bucketIterators[bucketIndex].next();
+        }
+    }
+
+    void clearTargetRefAs() {
+        for (List<RefObject> bucket: buckets) {
+            for (RefObject refObj : bucket) {
+                refObj.setRefA(null);
+            }
         }
     }
 
