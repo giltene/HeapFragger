@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 */
 class SitOnSomeHeap {
     List<RefObject>[] buckets;
-    ListIterator[] bucketIterators;
+    ListIterator<RefObject>[] bucketIterators;
     AtomicLong targetBucketCount = new AtomicLong(0);
 
     SitOnSomeHeap() {
@@ -44,10 +44,11 @@ class SitOnSomeHeap {
         }
     }
 
-    void clearTargetRefAs() {
+    void clearTargetRefs() {
         for (List<RefObject> bucket: buckets) {
             for (RefObject refObj : bucket) {
                 refObj.setRefA(null);
+                refObj.setRefB(null);
             }
         }
     }
@@ -77,9 +78,10 @@ class SitOnSomeHeap {
         return (double)(HeapFragger.MB / bytesPerObject);
     }
 
+    @SuppressWarnings({"unchecked"})
     public List [] sitOnSomeHeap(int heapMBtoSitOn, boolean verbose) {
-        buckets = new List[heapMBtoSitOn];
-        bucketIterators = new ListIterator[heapMBtoSitOn];
+        buckets = (List<RefObject>[]) new List[heapMBtoSitOn];
+        bucketIterators = (ListIterator<RefObject>[]) new ListIterator[heapMBtoSitOn];
         double objCountPerMB = calculateObjectCountPerMB();
 
         if (verbose) {
