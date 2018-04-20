@@ -121,6 +121,8 @@ public class HeapFragger extends Thread {
         public boolean verbose = false;
         public int heapMBtoSitOn = 100;
 
+        public boolean fullGcBetweenPasses = false;
+
         public String logFileName = null;
 
         void estimateHeapSize() {
@@ -134,6 +136,8 @@ public class HeapFragger extends Thread {
             for (int i = 0; i < args.length; ++i) {
                 if (args[i].equals("-v")) {
                     verbose = true;
+                } else if (args[i].equals("-g")) {
+                    fullGcBetweenPasses = true;
                 } else if (args[i].equals("-a")) {
                     allocMBsPerSec = Long.parseLong(args[++i]);
                 } else if(args[i].equals("-s")) {
@@ -170,7 +174,7 @@ public class HeapFragger extends Thread {
                 heapBudgetInMB = (int)(estimatedHeapMB * heapBudgetAsFraction);
             }
             peakMBPerIncrement = heapBudgetInMB / 2;
-            numStoreIncrements = (int) (estimatedHeapMB * 1.3 / peakMBPerIncrement) + 1; // ~1.3x the pass count that would be needed
+            numStoreIncrements = (int) (estimatedHeapMB * 1.5 / peakMBPerIncrement) + 1; // ~1.5x the pass count that would be needed
         }
 
         HeapFraggerConfiguration() {
@@ -315,7 +319,8 @@ public class HeapFragger extends Thread {
             int longArrayLength = (fragObjectSize - (config.estimatedArrayOverheadInBytes * 2))/8;
 
             if (config.verbose) {
-                log.println("\nHeapFragger: Pass Increment #" + passIncrementNumber + ": Making " +
+                log.println("\nHeapFragger: Pass Increment #" + passIncrementNumber +
+                        " (of 0.." + (config.numStoreIncrements - 1) + "): Making " +
                         targetObjCount + " Objects of size " + fragObjectSize);
             }
 
@@ -367,7 +372,18 @@ public class HeapFragger extends Thread {
             int fragObjectSize = config.initialFragObjectSize;
 
             initPassStores();
-            sitOnHeap.clearTargetRefAs();
+            sitOnHeap.clearTargetRefs();
+            
+            if (config.fullGcBetweenPasses) {
+                // Good for demonstrating that live set actually is stable. Some collectors (Ahem. G1. Ahem)
+                // won't drop the live set without this, leading to common questions/suspicions that the allocation
+                // pattern is somehow leaking live matter. Running with fullGcBetweenPasses turned on helps put
+                // put that argument to rest. Note that this does tend to cause a full GC with its associated pauses,
+                // so don't turn this on except for when you specifically want to verify that the live set is
+                // not growing...
+                System.gc();
+            }
+
 
             for (int storeIncrementNumber = 0; storeIncrementNumber < config.numStoreIncrements; storeIncrementNumber++) {
                 // Generate a fragmented set of objects of the current size in OldGen
