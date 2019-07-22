@@ -68,10 +68,10 @@ matter in the heap:
 
 java -Xmx2g -Xmx2g -XX:+UseConcMarkSweepGC -XX:+PrintGCApplicationStoppedTime
   -XX:+PrintGCDetails -Xloggc:gc.log -javaagent:HeapFragger.jar="-a 400 -s 512"
-    org.HeapFragger.Idle -t 1000000000
+    org.heaputils.Idle -t 1000000000
 
 You can also combine HeapFragger with [jHiccup](https://github.com/giltene/jHiccup) to produce a histogram log that
 can then be convenitely plotted with [HistogramLogAnalyzer](https://github.com/HdrHistogram/HistogramLogAnalyzer)
 
 E.g. here is an example command line for driving the G1GC bonkers and logging the resultant hiccup behavior:   
-java -Xmx4g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCDetails -Xloggc:g1gc.log -javaagent:HeapFragger.jar="-a 1000 -s 1024 -v" -javaagent:jHiccup.jar="-d 0 -i 1000 -l g1gc.hlog" org.HeapFragger.Idle -t 1000000000
+java -Xmx4g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCDetails -Xloggc:g1gc.log -javaagent:HeapFragger.jar="-a 1000 -s 1024 -v" -javaagent:jHiccup.jar="-d 0 -i 1000 -l g1gc.hlog" org.heaputils.Idle -t 1000000000

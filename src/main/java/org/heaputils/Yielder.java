@@ -1,4 +1,4 @@
-package org.HeapFragger;
+package org.heaputils;
 
 /**
  * Created with IntelliJ IDEA.

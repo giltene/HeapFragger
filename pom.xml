@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.heapfragger</groupId>
+    <groupId>org.heaputils</groupId>
     <artifactId>HeapFragger</artifactId>
     <version>1.0.2-SNAPSHOT</version>
 
@@ -61,8 +61,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
@@ -111,13 +111,13 @@
                     <archive>
                         <manifest>
                             <addClasspath>false</addClasspath>
-                            <mainClass>org.HeapFragger.HeapFragger</mainClass>
+                            <mainClass>org.heaputils.HeapFragger</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                         <manifestEntries>
-                            <Premain-Class>org.HeapFragger.HeapFragger</Premain-Class>
-                            <Agent-Class>org.HeapFragger.HeapFragger</Agent-Class>
+                            <Premain-Class>org.heaputils.HeapFragger</Premain-Class>
+                            <Agent-Class>org.heaputils.HeapFragger</Agent-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>

@@ -1,4 +1,4 @@
-package org.HeapFragger;
+package org.heaputils;
 
 import java.lang.management.ManagementFactory;
 import java.util.LinkedList;

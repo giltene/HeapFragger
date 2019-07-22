@@ -7,7 +7,7 @@
  * @version 1.0.9
  */
 
-package org.HeapFragger;
+package org.heaputils;
 
 import java.io.PrintStream;
 import java.lang.ref.ReferenceQueue;
@@ -53,7 +53,7 @@ class GCDetector {
 
     // Stuff for detecting basic garbage collection happening (usually newgen):
 
-    private Reference trackDeadObject(ReferenceQueue<Object> queue) {
+    private Reference trackWeaklyReachableObject(ReferenceQueue<Object> queue) {
         Object o = new Object();
         tempWeakRef = new WeakReference<Object>(o, queue);
         return tempWeakRef;
@@ -69,9 +69,9 @@ class GCDetector {
 
             // Loop until a weak referenced object is collected and it's reference is queued :
             while ((tempRef = referenceQueue.poll()) == null) {
-                // Periodically add a new dead object to track:
+                // Periodically add a new weakly-reachable object to track:
                 if ((count % churningAllocsBetweenEnqueues) == 0) {
-                    referenceArray[referenceIndex] = trackDeadObject(referenceQueue);
+                    referenceArray[referenceIndex] = trackWeaklyReachableObject(referenceQueue);
                     referenceIndex = (referenceIndex + 1) % numberOfRetainedWeakRefsInWaitForGC;
                 }
 
@@ -89,7 +89,7 @@ class GCDetector {
                 count++;
             }
 
-            Thread.sleep(100);
+            Thread.sleep(1);
 
         } catch (InterruptedException e) {
             if (verbose) {
